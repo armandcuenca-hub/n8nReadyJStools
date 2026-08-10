@@ -1,0 +1,37 @@
+//Input node data references, change $('NODE_NAME') accordingly if being used on a different workflow node
+//Variable 1 and 2 is different data to compare each other for any changes
+const existing = $('Salesforce Search').item.json;
+const form = $('Normalize Form Data').item.json;
+
+//Logic to compare values fetched from Var1 and Var2
+function merge(newV, oldV) {
+  const n = newV === undefined || newV === null ? '' : String(newV).trim();
+  if (n !== '') return n;
+  return oldV === undefined || oldV === null ? '' : String(oldV);
+}
+let hasChanges = false;
+function merged(newV, oldV) {
+  const n = newV === undefined || newV === null ? '' : String(newV).trim();
+  const o = oldV === undefined || oldV === null ? '' : String(oldV).trim();
+  if (n !== '' && n !== o) hasChanges = true;
+  return merge(newV, oldV);
+}
+
+//Output from comparison logic that can be used for checking
+//Can add more fields depending on the needs
+return {
+  json: {
+    leadId: existing.Id,
+    email: merged(form.email, existing.Email),
+    firstname: merged(form.firstname, existing.FirstName),
+    lastname: merged(form.lastname, existing.LastName),
+    company: merged(form.company, existing.Company),
+    mobilePhone: merged(form.phone, existing.MobilePhone),
+    city: merged(form.city, existing.City),
+    state: merged(form.state, existing.State),
+    country: merged(form.country, existing.Country),
+    title: merged(form.title, existing.Title),
+    website: merged(form.website, existing.Website),
+    hasChanges: hasChanges,
+  },
+};
