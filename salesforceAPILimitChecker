@@ -1,0 +1,25 @@
+// ---- Tunables ----
+const MAX_CHECKS = 96;      // give up after this many checks (96 x 15 min = 24h)
+const MIN_REMAINING = 25;   // keep a buffer of calls (this workflow uses ~3-4 per run)
+const MAX_USED_PCT = 95;    // treat as "near limit" at or above this % used
+
+const lim = $json.DailyApiRequests;
+if (!lim) throw new Error('DailyApiRequests missing from /limits response');
+
+const max = Number(lim.Max);
+const remaining = Number(lim.Remaining);
+const usedPct = max > 0 ? Math.round(((max - remaining) / max) * 1000) / 10 : 100;
+const nearLimit = remaining <= MIN_REMAINING || usedPct >= MAX_USED_PCT;
+
+// $runIndex counts how many times this node has run (i.e. loop passes)
+if (nearLimit && $runIndex >= MAX_CHECKS - 1) {
+  throw new Error(`Salesforce API still near limit after ${MAX_CHECKS} checks (remaining ${remaining}/${max})`);
+}
+
+// Pass the normalized form data through so Salesforce Search ({{ $json.email }}) keeps working
+return {
+  json: {
+    ...$('Normalize Form Data').item.json,
+    sfLimit: { max, remaining, usedPct, nearLimit, attempt: $runIndex + 1, checkedAt: new Date().toISOString() }
+  }
+};
